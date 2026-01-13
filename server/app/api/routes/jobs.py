@@ -8,12 +8,12 @@ from typing import List
 router = APIRouter()
 
 
-@router.get("/", response_model=List[JobRead])
+@router.get("", response_model=List[JobRead])
 def list_jobs(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return get_jobs(db, skip=skip, limit=limit)
 
 
-@router.post("/", response_model=JobRead)
+@router.post("", response_model=JobRead)
 def add_job(job_in: JobCreate, db: Session = Depends(get_db)):
     job = create_job(db, job_in)
     return job
