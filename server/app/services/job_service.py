@@ -19,3 +19,16 @@ def create_job(db: Session, job_in: JobCreate) -> Job:
     db.commit()
     db.refresh(job)
     return job
+
+
+def get_job(db: Session, job_id: int) -> Job | None:
+    return db.query(Job).filter(Job.id == job_id).first()
+
+
+def delete_job(db: Session, job_id: int) -> bool:
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        return False
+    db.delete(job)
+    db.commit()
+    return True

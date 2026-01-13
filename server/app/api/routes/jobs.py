@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.services.job_service import get_jobs, create_job
+from app.services.job_service import get_jobs, create_job, get_job, delete_job
 from app.schemas.job import JobCreate, JobRead
 from typing import List
 
@@ -35,3 +35,20 @@ def scrape_and_store(db: Session = Depends(get_db)):
         )
         created.append(create_job(db, payload))
     return created
+
+
+
+@router.get("/{job_id}", response_model=JobRead)
+def read_job(job_id: int, db: Session = Depends(get_db)):
+    job = get_job(db, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+
+@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_job(job_id: int, db: Session = Depends(get_db)):
+    ok = delete_job(db, job_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
