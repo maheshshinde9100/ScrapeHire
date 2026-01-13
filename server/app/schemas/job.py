@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 
 class JobBase(BaseModel):
@@ -15,7 +16,7 @@ class JobCreate(JobBase):
 
 class JobRead(JobBase):
     id: int
-    created_at: Optional[str]
+    created_at: Optional[datetime]
 
     class Config:
         from_attributes = True
