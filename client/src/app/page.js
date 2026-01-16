@@ -1,128 +1,136 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
+import { JobCard } from "@/components/JobCard";
+import { JobForm } from "@/components/JobForm";
+import { SearchBar } from "@/components/SearchBar";
+import * as api from "@/lib/api";
 
 export default function Home() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ title: "", company: "", url: "" });
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("created_at");
+  const [order, setOrder] = useState("desc");
 
   useEffect(() => {
-    async function fetchJobs() {
-      try {
-        const res = await fetch("http://localhost:8000/jobs");
-        const data = await res.json();
-        setJobs(data || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchJobs();
-  }, []);
+    fetchJobsList();
+  }, [search, sortBy, order]);
 
-  async function handleScrape() {
+  async function fetchJobsList() {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch("http://localhost:8000/jobs/scrape", { method: "POST" });
-      if (res.ok) {
-        await fetchJobsOnce();
-      } else {
-        console.error("scrape failed", res.status);
-      }
-    } catch (e) {
-      console.error(e);
+      const data = await api.fetchJobs(0, 100, search, sortBy, order);
+      setJobs(data || []);
+    } catch (err) {
+      setError(err.message);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   }
 
-  async function fetchJobsOnce() {
+  async function handleScrape() {
+    setLoading(true);
+    setError(null);
     try {
-      const res = await fetch("http://localhost:8000/jobs");
-      const data = await res.json();
-      setJobs(data || []);
+      await api.scrapeJobs();
+      await fetchJobsList();
     } catch (err) {
+      setError(err.message);
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   }
 
-  async function handleAdd(e) {
-    e.preventDefault();
+  async function handleAdd(jobData) {
+    setError(null);
     try {
-      const res = await fetch("http://localhost:8000/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (res.ok) {
-        setForm({ title: "", company: "", url: "" });
-        await fetchJobsOnce();
-      } else {
-        console.error("add failed", res.status);
-      }
-    } catch (e) {
-      console.error(e);
+      await api.createJob(jobData);
+      await fetchJobsList();
+    } catch (err) {
+      setError(err.message);
+      console.error(err);
     }
   }
 
   async function handleDelete(id) {
     try {
-      const res = await fetch(`http://localhost:8000/jobs/${id}`, { method: "DELETE" });
-      if (res.status === 204) {
-        setJobs((s) => s.filter((j) => j.id !== id));
-      } else {
-        console.error("delete failed", res.status);
-      }
-    } catch (e) {
-      console.error(e);
+      await api.deleteJob(id);
+      setJobs((s) => s.filter((j) => j.id !== id));
+    } catch (err) {
+      setError(err.message);
+      console.error(err);
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-4xl flex-col gap-8 py-16 px-8 bg-white dark:bg-black">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Image src="/next.svg" alt="logo" width={64} height={20} />
-            <h1 className="text-2xl font-semibold">ScrapeHire</h1>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="max-w-5xl mx-auto py-8 px-4">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">ScrapeHire</h1>
+          <p className="text-gray-600">Find and manage remote job listings</p>
         </div>
 
-        <section>
-          <h2 className="text-xl font-medium mb-4">Jobs</h2>
-          <div className="mb-4 flex gap-2">
-            <button
-              onClick={handleScrape}
-              className="rounded bg-blue-600 px-3 py-1 text-white"
-            >
-              Scrape
-            </button>
-            <form onSubmit={handleAdd} className="flex gap-2">
-              <input
-                required
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="Title"
-                className="border px-2"
-              />
-              <input
-                value={form.company}
-                onChange={(e) => setForm({ ...form, company: e.target.value })}
-                placeholder="Company"
-                className="border px-2"
-              />
-              <input
-                value={form.url}
-                onChange={(e) => setForm({ ...form, url: e.target.value })}
-                placeholder="URL"
-                className="border px-2"
-              />
-              <button className="rounded bg-green-600 px-3 py-1 text-white">Add</button>
-            </form>
+        {/* Error Banner */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+            {error}
           </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="mb-6 flex gap-2">
+          <button
+            onClick={handleScrape}
+            disabled={loading}
+            className="rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loading ? "Scraping..." : "Scrape Jobs"}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: Search + Form */}
+          <div className="lg:col-span-1 space-y-4">
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              onSort={(s, o) => {
+                setSortBy(s);
+                setOrder(o);
+              }}
+              sortBy={sortBy}
+              order={order}
+            />
+            <JobForm onSubmit={handleAdd} loading={loading} />
+          </div>
+
+          {/* Right: Jobs List */}
+          <div className="lg:col-span-2">
+            {loading && jobs.length === 0 ? (
+              <p className="text-center py-8 text-gray-500">Loading...</p>
+            ) : jobs.length === 0 ? (
+              <p className="text-center py-8 text-gray-500">
+                No jobs found. Try scraping or adding one!
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {jobs.map((job) => (
+                  <JobCard key={job.id} job={job} onDelete={handleDelete} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
           {loading ? (
             <p>Loading...</p>
           ) : jobs.length === 0 ? (
