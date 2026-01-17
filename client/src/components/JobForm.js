@@ -11,41 +11,68 @@ export function JobForm({ onSubmit, loading = false }) {
     setForm({ title: "", company: "", description: "", url: "" });
   };
 
+  const inputClass = "w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all";
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 bg-gray-50 p-4 rounded border border-gray-200">
-      <h3 className="font-semibold text-gray-900">Add Job</h3>
-      <input
-        required
-        value={form.title}
-        onChange={(e) => setForm({ ...form, title: e.target.value })}
-        placeholder="Job Title"
-        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-      />
-      <input
-        value={form.company}
-        onChange={(e) => setForm({ ...form, company: e.target.value })}
-        placeholder="Company (optional)"
-        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-      />
-      <textarea
-        value={form.description}
-        onChange={(e) => setForm({ ...form, description: e.target.value })}
-        placeholder="Description (optional)"
-        rows="2"
-        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-      />
-      <input
-        value={form.url}
-        onChange={(e) => setForm({ ...form, url: e.target.value })}
-        placeholder="Job URL (optional)"
-        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-      />
+    <form onSubmit={handleSubmit} className="glass p-6 rounded-xl space-y-4">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+        </div>
+        <h3 className="font-bold text-lg text-white">Post a Job</h3>
+      </div>
+
+      <div>
+        <input
+          required
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          placeholder="Job Title"
+          className={inputClass}
+        />
+      </div>
+
+      <div>
+        <input
+          value={form.company}
+          onChange={(e) => setForm({ ...form, company: e.target.value })}
+          placeholder="Company Name"
+          className={inputClass}
+        />
+      </div>
+
+      <div>
+        <textarea
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          placeholder="Job Description..."
+          rows="3"
+          className={inputClass}
+        />
+      </div>
+
+      <div>
+        <input
+          value={form.url}
+          onChange={(e) => setForm({ ...form, url: e.target.value })}
+          placeholder="Application URL"
+          className={inputClass}
+        />
+      </div>
+
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded bg-green-600 text-white font-medium py-2 hover:bg-green-700 disabled:opacity-50"
+        className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 hover:from-blue-500 hover:to-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-900/30 flex justify-center items-center gap-2"
       >
-        {loading ? "Adding..." : "Add Job"}
+        {loading ? (
+          <>
+            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            Processing...
+          </>
+        ) : (
+          "Add Job Listing"
+        )}
       </button>
     </form>
   );
