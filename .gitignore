@@ -1,2 +1,4 @@
 server/.env
 server/app/api/routes/__pycache__/jobs.cpython-313.pyc
+server/app/scraping/__pycache__/remoteok.cpython-313.pyc
+server/app/services/__pycache__/job_service.cpython-313.pyc
