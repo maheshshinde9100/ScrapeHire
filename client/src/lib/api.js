@@ -3,7 +3,7 @@ const API_BASE = "http://localhost:8000";
 export async function fetchJobs(skip = 0, limit = 100, search = null, sortBy = "created_at", order = "desc") {
   const params = new URLSearchParams({ skip, limit, sort_by: sortBy, order });
   if (search) params.append("search", search);
-  
+
   const res = await fetch(`${API_BASE}/jobs?${params}`);
   if (!res.ok) throw new Error(`Failed to fetch jobs: ${res.statusText}`);
   return res.json();
@@ -43,5 +43,11 @@ export async function deleteJob(id) {
 export async function scrapeJobs() {
   const res = await fetch(`${API_BASE}/jobs/scrape`, { method: "POST" });
   if (!res.ok) throw new Error(`Failed to scrape jobs: ${res.statusText}`);
+  return res.json();
+}
+
+export async function fetchRelatedJobs(id) {
+  const res = await fetch(`${API_BASE}/jobs/${id}/related`);
+  if (!res.ok) throw new Error(`Failed to fetch related jobs: ${res.statusText}`);
   return res.json();
 }
