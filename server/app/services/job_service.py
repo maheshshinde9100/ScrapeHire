@@ -60,3 +60,31 @@ def update_job(db: Session, job_id: int, job_in: JobCreate) -> Job | None:
     db.commit()
     db.refresh(job)
     return job
+
+
+def get_related_jobs(db: Session, job_id: int, limit: int = 5) -> List[Job]:
+    # 1. Get the reference job
+    job = get_job(db, job_id)
+    if not job:
+        return []
+
+    # 2. Extract keywords (naive approach: take words with length > 3)
+    # This acts as our "client filter" logic re-applied for suggestions
+    words = [w for w in job.title.split() if len(w) > 3]
+    if not words:
+        return []
+    
+    # 3. Build a query that looks for ANY of these keywords
+    # Using simplistic OR logic for "similar type"
+    from sqlalchemy import or_
+
+    filters = []
+    for word in words:
+        filters.append(Job.title.ilike(f"%{word}%"))
+    
+    query = db.query(Job).filter(
+        or_(*filters),
+        Job.id != job_id  # Exclude self
+    )
+    
+    return query.limit(limit).all()
