@@ -23,18 +23,33 @@ def add_job(job_in: JobCreate, db: Session = Depends(get_db)):
 @router.post("/scrape", response_model=List[JobRead])
 def scrape_and_store(db: Session = Depends(get_db)):
     # run available scrapers and persist any new jobs
+    from app.services.job_service import get_job_by_url
     from app.scraping.remoteok import scrape_remoteok
     from app.scraping.remotive import scrape_remotive
     from app.scraping.weworkremotely import scrape_weworkremotely
 
-    scraped = scrape_remoteok() + scrape_remotive() + scrape_weworkremotely()
+    # Limit to top 15 from each to mimic a human browsing a "page" of results
+    # and to keep the request fast and lightweight.
+    LIMIT_PER_SOURCE = 15
+
+    jobs_remoteok = scrape_remoteok()
+    jobs_remotive = scrape_remotive()
+    jobs_wwr = scrape_weworkremotely()
+
+    scraped = jobs_remoteok[:LIMIT_PER_SOURCE] + jobs_remotive[:LIMIT_PER_SOURCE] + jobs_wwr[:LIMIT_PER_SOURCE]
+
     created = []
     for item in scraped:
+        # Check if job already exists to avoid duplicates (and act as a cache)
+        job_url = item.get("url")
+        if job_url and get_job_by_url(db, job_url):
+            continue
+            
         payload = JobCreate(
             title=item.get("title") or "",
             company=item.get("company"),
             description=item.get("description"),
-            url=item.get("url"),
+            url=job_url,
         )
         created.append(create_job(db, payload))
     return created

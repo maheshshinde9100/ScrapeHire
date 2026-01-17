@@ -88,3 +88,9 @@ def get_related_jobs(db: Session, job_id: int, limit: int = 5) -> List[Job]:
     )
     
     return query.limit(limit).all()
+
+
+def get_job_by_url(db: Session, url: str) -> Job | None:
+    if not url:
+        return None
+    return db.query(Job).filter(Job.url == url).first()
