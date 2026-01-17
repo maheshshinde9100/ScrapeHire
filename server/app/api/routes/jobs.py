@@ -24,8 +24,10 @@ def add_job(job_in: JobCreate, db: Session = Depends(get_db)):
 def scrape_and_store(db: Session = Depends(get_db)):
     # run available scrapers and persist any new jobs
     from app.scraping.remoteok import scrape_remoteok
+    from app.scraping.remotive import scrape_remotive
+    from app.scraping.weworkremotely import scrape_weworkremotely
 
-    scraped = scrape_remoteok()
+    scraped = scrape_remoteok() + scrape_remotive() + scrape_weworkremotely()
     created = []
     for item in scraped:
         payload = JobCreate(
@@ -61,4 +63,14 @@ def remove_job(job_id: int, db: Session = Depends(get_db)):
     if not ok:
         raise HTTPException(status_code=404, detail="Job not found")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/{job_id}/related", response_model=List[JobRead])
+def find_related_jobs(job_id: int, db: Session = Depends(get_db)):
+    """
+    Get a list of jobs similar to the specified job (based on title keywords).
+    """
+    from app.services.job_service import get_related_jobs
+    return get_related_jobs(db, job_id)
+
 
