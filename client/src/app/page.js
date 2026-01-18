@@ -13,23 +13,37 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("created_at");
   const [order, setOrder] = useState("desc");
+  const [offset, setOffset] = useState(0);
+  const [editingJob, setEditingJob] = useState(null);
 
   useEffect(() => {
-    fetchJobsList();
+    // When filters change, reset to page 0 and fetch fresh
+    setOffset(0);
+    fetchJobsList(0, false);
   }, [search, sortBy, order]);
 
-  async function fetchJobsList() {
+  async function fetchJobsList(skip = 0, isLoadMore = false) {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.fetchJobs(0, 100, search, sortBy, order);
-      setJobs(data || []);
+      const data = await api.fetchJobs(skip, 100, search, sortBy, order);
+      if (isLoadMore) {
+        setJobs((prev) => [...prev, ...(data || [])]);
+      } else {
+        setJobs(data || []);
+      }
     } catch (err) {
       setError(err.message);
       console.error(err);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleLoadMore() {
+    const newOffset = offset + 100;
+    setOffset(newOffset);
+    await fetchJobsList(newOffset, true);
   }
 
   async function handleScrape() {
@@ -37,7 +51,9 @@ export default function Home() {
     setError(null);
     try {
       await api.scrapeJobs();
-      await fetchJobsList();
+      // Refresh list from scratch
+      setOffset(0);
+      await fetchJobsList(0, false);
     } catch (err) {
       setError(err.message);
       console.error(err);
@@ -46,21 +62,43 @@ export default function Home() {
     }
   }
 
-  async function handleAdd(jobData) {
+  async function handleFormSubmit(jobData) {
     setError(null);
     try {
-      await api.createJob(jobData);
-      await fetchJobsList();
+      if (editingJob) {
+        await api.updateJob(editingJob.id, jobData);
+        // Optimistic update or refresh? Refresh for safety.
+        // Or better: update locally to avoid flash
+        setJobs((prev) => prev.map(j => j.id === editingJob.id ? { ...j, ...jobData } : j));
+        setEditingJob(null);
+      } else {
+        await api.createJob(jobData);
+        // Refresh to show new job at top (if sorted by date)
+        fetchJobsList(0, false);
+      }
     } catch (err) {
       setError(err.message);
       console.error(err);
     }
   }
 
+  function handleEdit(job) {
+    setEditingJob(job);
+    // Scroll to top to see form
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleCancelEdit() {
+    setEditingJob(null);
+  }
+
   async function handleDelete(id) {
     try {
       await api.deleteJob(id);
       setJobs((s) => s.filter((j) => j.id !== id));
+      if (editingJob && editingJob.id === id) {
+        setEditingJob(null);
+      }
     } catch (err) {
       setError(err.message);
       console.error(err);
@@ -125,7 +163,12 @@ export default function Home() {
                 sortBy={sortBy}
                 order={order}
               />
-              <JobForm onSubmit={handleAdd} loading={loading} />
+              <JobForm
+                onSubmit={handleFormSubmit}
+                loading={loading && !offset} // Only show form loading on initial fetch or submit
+                initialValues={editingJob}
+                onCancel={handleCancelEdit}
+              />
             </div>
           </div>
 
@@ -157,11 +200,30 @@ export default function Home() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {jobs.map((job) => (
-                  <JobCard key={job.id} job={job} onDelete={handleDelete} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {jobs.map((job) => (
+                    <JobCard
+                      key={job.id}
+                      job={job}
+                      onDelete={handleDelete}
+                      onEdit={handleEdit}
+                    />
+                  ))}
+                </div>
+
+                {jobs.length > 0 && jobs.length % 100 === 0 && (
+                  <div className="mt-8 text-center">
+                    <button
+                      onClick={handleLoadMore}
+                      disabled={loading}
+                      className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors border border-slate-700"
+                    >
+                      {loading ? "Loading..." : "Load More Jobs"}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
