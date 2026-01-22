@@ -5,7 +5,6 @@ from app.db.session import engine, Base
 
 app = FastAPI(title="ScrapeHire API")
 
-# simple CORS for local development (adjust origins in production)
 app.add_middleware(
 	CORSMiddleware,
 	allow_origins=["http://localhost:3000"],
@@ -17,7 +16,6 @@ app.add_middleware(
 
 @app.on_event("startup")
 def on_startup():
-	# ensure database tables exist
 	Base.metadata.create_all(bind=engine)
 
 

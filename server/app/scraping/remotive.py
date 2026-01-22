@@ -2,7 +2,6 @@ import requests
 
 
 def scrape_remotive():
-	# Remotive provides a jobs API; use it to fetch remote jobs
 	url = "https://remotive.com/api/remote-jobs"
 	try:
 		res = requests.get(url, timeout=10)
